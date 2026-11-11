@@ -1,0 +1,214 @@
+平衡车项目硬件驱动函数说明
+
+1. 电机驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Motor\Motor.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Motor\Motor.c
+
+主要函数：
+
+- Motor_Init()
+  启动TIM2的PWM输出，初始化左右电机速度为0。
+  作用：让电机驱动通道进入可用状态。
+
+- Motor_TIM2_SetARR_PSC(uint16_t PSC, uint16_t ARR)
+  修改TIM2的预分频和自动重装值。
+  作用：改变PWM分辨率和频率。
+
+- Motor_SetCCR(Motor motor, uint16_t CCR)
+  设置左/右电机PWM比较值。
+  作用：直接控制占空比，最终决定电机输出强弱。
+
+- Motor_SetRotation(Motor motor, Motor_State state)
+  设置电机方向：停止、正转、反转、刹车。
+  作用：配合CCR实现双向控制。
+
+- Motor_SetSpeed()
+  根据按键状态修改CCR12/CCR34。
+  作用：目前更像手动调速测试接口，不适合作为平衡控制主逻辑。
+
+注意：
+Motor_SetCCR()吃的是CCR，不是电压。
+如果PID输出有正负号，必须先判断方向，再把绝对值送给CCR。
+
+2. 编码器驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Encoder\Encoder.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Encoder\Encoder.c
+
+主要函数：
+
+- Encoder_Init()
+  启动TIM3/TIM4编码器模式。
+  作用：让左右轮编码器开始计数。
+
+- Encoder_GetCounter(Motor motor)
+  读取某个电机对应TIM的CNT，并清零。
+  作用：用于周期性测速。
+
+- Encoder_GetSpeed(Motor motor)
+  将CNT换算成速度。
+  当前公式结果是 rpm。
+
+注意：
+编码器函数是速度环的反馈来源。
+如果做角度环，编码器可以先不用参与主环，但后续做速度环一定要用。
+
+3. MPU6050姿态驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\MPU6050\MPU6050.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\MPU6050\MPU6050.c
+
+主要函数：
+
+- MPU6050_Init()
+  复位、唤醒并配置量程。
+  作用：传感器上电后必须先初始化。
+
+- MPU6050_Update(MPU6050_Data_t *mpu)
+  通过I2C读取14字节原始数据。
+  作用：拿到加速度、角速度、温度原始值。
+
+- MPU6050_Calculate(MPU6050_Data_t *mpu, MPU6050_Data_f *mpu_f)
+  将原始值换算成g、deg/s、温度。
+  作用：把传感器读数变成可计算数据。
+
+- MPU6050_GetEuler_g()
+  仅用陀螺仪积分角度。
+
+- MPU6050_GetEuler_a()
+  仅用加速度计估计角度。
+
+- MPU6050_GetEulerComplementary()
+  互补滤波融合角速度和加速度角度。
+  作用：平衡车最常用的姿态估计接口。
+
+注意：
+平衡车通常用俯仰角pitch作为平衡角。
+哪个轴前后倾斜变化最大，就用哪个角作为角度环反馈。
+
+4. 按键驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Key\Key.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\Key\Key.c
+
+主要函数：
+
+- Key_Update(KeyControl *key, GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+  非阻塞式状态机消抖。
+  作用：周期扫描按键，确认有效按下/松开。
+
+- Keys_GetStates()
+  读取key1~key4的press_event。
+  作用：返回哪个键刚刚产生了一次按下事件。
+
+注意：
+按键适合做模式切换、参数加减、调试测试。
+不建议把按键逻辑直接塞进平衡闭环主控制里。
+当前源码里中断文件调用的是`Key_FSMUpdate()`，但按键模块里导出的是`Key_Update()`，如果你当前分支还是这个名字，要先统一，否则按键扫描不会正常工作。
+
+5. 蓝牙串口驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\BlueTooth\BlueTooth.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\HardWare\BlueTooth\BlueTooth.c
+
+主要函数：
+
+- BlueTooth_ReceiveStart()
+  启动USART2单字节中断接收。
+
+- BlueTooth_Transmit(uint8_t data)
+  发送单字节。
+
+- BlueTooth_Receive()
+  根据接收完成标志显示或处理数据。
+
+注意：
+这个模块更适合参数调试，不是平衡控制必需项。
+
+6. TIM节拍驱动
+
+文件：
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\System\TIM_Counter\TIM_Counter.h
+D:\AAA_stm32_project\STM32_Project\Project_BalanceCar\System\TIM_Counter\TIM_Counter.c
+
+主要函数：
+
+- TIM1_Init()
+  启动TIM1更新中断。
+
+- TIM_GetCounter()
+  返回全局counter。
+
+用途：
+TIM1适合做固定周期调度：
+按键扫描、编码器读取、PID计算都可以放在这个节拍里分时执行。
+
+7. 角度环PID怎么接这些函数
+
+目标：
+先让车立起来，先做角度环。
+
+控制链路：
+
+1) MPU6050读取姿态
+2) 互补滤波得到pitch角
+3) 角度PID计算控制量CO
+4) CO映射为电机方向 + CCR
+5) 电机驱动车轮修正车身姿态
+
+推荐变量含义：
+
+- SP：目标角度，通常是0度
+- FB：当前pitch角
+- err：角度误差 = SP - FB
+- CO：PID输出控制量，最终转换成PWM CCR
+
+最简单的角度环用法：
+
+1. 设定SP = 0
+2. 每5ms或10ms读取一次pitch
+3. PID计算得到u
+4. u > 0，电机正转
+5. u < 0，电机反转
+6. |u| 作为CCR写入Motor_SetCCR()
+
+也就是：
+
+角度误差 -> PID -> signed控制量 -> Motor_SetRotation + Motor_SetCCR
+
+8. 后续更稳的做法
+
+平衡车通常用串级控制：
+
+外环：角度环
+- 输入：pitch角
+- 输出：目标速度或目标力矩
+
+内环：速度环
+- 输入：编码器速度rpm
+- 输出：PWM CCR
+
+推荐顺序：
+
+先角度环跑通，让车能短时间立起来。
+再加速度环，抑制前后漂移。
+最后再考虑转向、位置环和蓝牙参数调节。
+
+9. 当前驱动层注意点
+
+- Encoder_Init()里编码器启动参数要特别检查。
+- MPU6050的角度计算周期必须和实际调用周期一致。
+- PID输出要做限幅和防积分饱和。
+- 电机输出要注意方向和CCR的符号映射。
+- 不要在平衡控制主循环里反复调用MPU6050_Init()。
+
+10. 一句话总结
+
+平衡车的核心不是“让电机转”，而是：
+传感器给出倾角，PID算出修正量，电机把车身重新推回0度附近。

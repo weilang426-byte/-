@@ -1,0 +1,1 @@
+/* No display needed in host control tests. */

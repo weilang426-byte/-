@@ -1,0 +1,8 @@
+//
+// Created by LWadmin on 2026/8/24.
+//
+
+#ifndef PROJECT_BALANCECAR_TEST_ENCODER_H
+#define PROJECT_BALANCECAR_TEST_ENCODER_H
+void Test_Encoder();
+#endif //PROJECT_BALANCECAR_TEST_ENCODER_H

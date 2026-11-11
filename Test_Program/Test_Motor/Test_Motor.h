@@ -1,0 +1,10 @@
+//
+// Created by LWadmin on 2026/8/24.
+//
+
+#ifndef PROJECT_BALANCECAR_TEST_MOTOR_H
+#define PROJECT_BALANCECAR_TEST_MOTOR_H
+
+void MotorTest();
+
+#endif //PROJECT_BALANCECAR_TEST_MOTOR_H

@@ -1,0 +1,15 @@
+//
+// Created by LWadmin on 2026/9/1.
+//
+
+#ifndef PROJECT_BALANCECAR_MOTOR_HEAD_H
+#define PROJECT_BALANCECAR_MOTOR_HEAD_H
+
+//步进 ARR3599
+#define MOTOR_STEPSIZE 500
+//PWM：0-100  CO就是占空比了
+
+#define MOTOR_CCR_MAX 3599
+
+
+#endif //PROJECT_BALANCECAR_MOTOR_HEAD_H

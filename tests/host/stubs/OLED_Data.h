@@ -1,0 +1,1 @@
+/* No display font needed in host control tests. */

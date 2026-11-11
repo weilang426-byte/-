@@ -1,0 +1,8 @@
+//
+// Created by LWadmin on 2026/8/23.
+//
+
+#ifndef PROJECT_BALANCECAR_TEST_BLUETOOTH_H
+#define PROJECT_BALANCECAR_TEST_BLUETOOTH_H
+uint8_t Test_BlueTooth();
+#endif //PROJECT_BALANCECAR_TEST_BLUETOOTH_H
